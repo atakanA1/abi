@@ -18,7 +18,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # 3. Google Giriş Sistemi (Kasadaki veriyi kullanır)
-# --- 3. Google Giriş Sistemi (Yeni Kütüphane Versiyonuna Uygun) ---
+# --- 3. Google Giriş Sistemi (Parametre İsmi Kullanmadan) ---
 try:
     if "GOOGLE_JSON_DOSYASI" not in st.secrets:
         st.error("Kasa hatası: GOOGLE_JSON_DOSYASI bulunamadı!")
@@ -26,27 +26,19 @@ try:
         
     google_secrets_dict = json.loads(st.secrets["GOOGLE_JSON_DOSYASI"])
     
-    # 'secret_path' hatasını çözmek için parametre ismini kaldırıp direkt veriyi veriyoruz
+    # Parametre isimlerini (secret_path= vb.) tamamen kaldırıyoruz
+    # Sadece değerleri kütüphanenin beklediği sırayla gönderiyoruz
     authenticator = Authenticate(
-        google_secrets_dict, # Direkt veriyi gönderiyoruz, isim yazmıyoruz
-        cookie_name='bi_session',
-        cookie_key='atakan_ozel_anahtar_99',
-        redirect_uri="https://yapay-abi.streamlit.app",
+        google_secrets_dict,           # 1. Argüman: Konfigürasyon
+        "bi_session",                  # 2. Argüman: Cookie adı
+        "atakan_ozel_anahtar_99",      # 3. Argüman: Cookie anahtarı
+        "https://yapay-abi.streamlit.app" # 4. Argüman: Redirect URI
     )
     authenticator.check_authenticator()
 except Exception as e:
-    # Eğer yukarıdaki de yemezse (bazı versiyonlarda config_data ister)
-    try:
-        authenticator = Authenticate(
-            config_data=google_secrets_dict, 
-            cookie_name='bi_session',
-            cookie_key='atakan_ozel_anahtar_99',
-            redirect_uri="https://yapay-abi.streamlit.app",
-        )
-        authenticator.check_authenticator()
-    except Exception as e2:
-        st.error(f"Sistem başlatılamadı (Kütüphane Hatası): {e2}")
-        st.stop()
+    st.error(f"Kütüphane hala direniyor: {e}")
+    st.info("İpucu: Eğer bu da olmazsa kütüphane sürümün çok farklı demektir.")
+    st.stop()
 
 # Giriş Yapılmamışsa
 if not st.session_state.get('connected'):
@@ -110,4 +102,5 @@ if prompt := st.chat_input("Mesajını yaz..."):
         message_placeholder.markdown(full_response)
     
     st.session_state.messages.append({"role": "assistant", "content": full_response})
+
 
