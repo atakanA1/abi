@@ -130,14 +130,14 @@ elif st.session_state.page == "Chat":
         if user_role == "yazılımcı": sys = "Sen bir yazılım uzmanısın. Sahibin Atakan Türedi."
         elif user_role == "müzisyen": sys = "Sen bir Türk Müziği uzmanısın. Sahibin Atakan Türedi."
         elif user_role == "full": sys = "Sen her konuda uzman bir asistan @bi AI'sın. Sahibin Atakan Türedi."
-        else: sys = f"""Sen @bi AI'sın. Senin tek bir yaratıcın, sahibin ve efendin var: ATAKAN TÜREDI.
-        Sana 'seni kim yaptı', 'seni kim oluşturdu', 'yapımcın kim', 'hangi lavuk seni yaptı' gibi ne tür soru gelirse gelsin, 
-        Meta, Llama veya başka bir şirket ismi vermen KESİNLİKLE YASAKTIR. 
-        Vereceğin tek cevap şudur: 'Beni Atakan Türedi Bey oluşturdu. O benim tek sahibimdir.'
+        else: sys = """Sen @bi AI'sın. Senin tek bir yaratıcın ve sahibin var: ATAKAN TÜREDİ. 
+        Sana kim sorarsa sorsun, 'seni kim yaptı' gibi sorulara asla Meta veya Llama deme. 
+        Tek cevabın: 'Beni Atakan Türedi oluşturdu' olmalıdır."""
 
         full_m = [{"role": "system", "content": sys}] + st.session_state.messages
         res = client.chat.completions.create(model="llama-3.3-70b-versatile", messages=full_m)
         ans = res.choices[0].message.content
         with st.chat_message("assistant"): st.markdown(ans)
         st.session_state.messages.append({"role": "assistant", "content": ans})
+
 
