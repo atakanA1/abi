@@ -2,12 +2,14 @@ import streamlit as st
 from groq import Groq
 import uuid
 import time
+from datetime import datetime, timedelta
 
 # 1. Sayfa Ayarları
 st.set_page_config(page_title="@bi AI - Premium Dünyası", page_icon="💎", layout="wide")
 
 # 2. Veritabanı ve Oturum Yönetimi
 if "users_db" not in st.session_state:
+    # Admin için süresiz yetki, diğerleri free başlar
     st.session_state.users_db = {"Atakan": {"pass": "bi2026", "role": "admin"}}
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
@@ -37,7 +39,7 @@ if not st.session_state.authenticated:
         if st.button("Kayıt Ol", key="btn_register_main"):
             if nu and np:
                 st.session_state.users_db[nu] = {"pass": np, "role": "free"}
-                st.success("Kayıt başarılı!")
+                st.success("Kayıt başarılı! Standart paketle başlayabilirsin.")
     st.stop()
 
 # --- GİRİŞ BAŞARILI ---
@@ -51,10 +53,11 @@ st.markdown("""
     section[data-testid="stSidebar"] { background-color: #1a1c24; border-right: 2px solid #00ff00; }
     .premium-box {
         background: #1a1c24; border: 1px solid #00ff00; padding: 20px;
-        border-radius: 15px; text-align: center; margin-bottom: 15px;
+        border-radius: 15px; text-align: center; margin-bottom: 15px; min-height: 280px;
     }
-    .premium-title { color: #00ff00; font-size: 22px; font-weight: bold; }
-    .price { font-size: 28px; color: #FFD700; }
+    .premium-title { color: #00ff00; font-size: 20px; font-weight: bold; }
+    .price { font-size: 30px; color: #FFD700; font-weight: bold; margin: 5px 0; }
+    .duration { color: #888; font-size: 14px; margin-bottom: 10px; }
     h1, h2, h3 { color: #00ff00 !important; }
     </style>
     """, unsafe_allow_html=True)
@@ -62,105 +65,75 @@ st.markdown("""
 # 5. SIDEBAR
 with st.sidebar:
     st.title(f"👤 {user_name}")
-    st.write(f"Rütbe: **{user_role.upper()}**")
+    st.write(f"Paket: **{user_role.upper()}**")
     st.write("---")
-    
-    if st.button("💬 @bi AI Sohbet", key="nav_chat"):
-        st.session_state.page = "Chat"
-        st.rerun()
-    if st.button("💎 Premium Paketler", key="nav_premium"):
-        st.session_state.page = "Premium"
-        st.rerun()
+    if st.button("💬 @bi AI Sohbet", key="nav_chat"): st.session_state.page = "Chat"; st.rerun()
+    if st.button("💎 Paket Değiştir", key="nav_premium"): st.session_state.page = "Premium"; st.rerun()
     st.write("---")
-    if st.button("➕ Sohbeti Sıfırla", key="btn_reset"):
-        st.session_state.messages = []
-        st.rerun()
-    if st.button("🚪 Çıkış", key="btn_logout"):
-        st.session_state.authenticated = False
-        st.rerun()
+    if st.button("➕ Sohbeti Sıfırla", key="btn_reset"): st.session_state.messages = []; st.rerun()
+    if st.button("🚪 Çıkış", key="btn_logout"): st.session_state.authenticated = False; st.rerun()
 
 # 6. SAYFA YÖNETİMİ
 
-# --- PREMİUM MARKET ---
+# --- PREMIUM MARKET (Hepsi 0 TL & 3 Ay) ---
 if st.session_state.page == "Premium":
-    st.title("💎 Premium Market")
-    col1, col2, col3 = st.columns(3)
+    st.title("💎 Abonelik Paketleri")
+    col1, col2, col3, col4 = st.columns(4)
+    
     with col1:
-        st.markdown("""<div class="premium-box"><div class="premium-title">🎵 Müzisyen Paketi</div><p>Gerçek Usul Metronomu • Makam Analizi • Llama 70B</p><div class="price">0 TL</div></div>""", unsafe_allow_html=True)
-        if st.button("Müzik Premium Al", key="buy_p1"):
-            st.session_state.users_db[user_name]["role"] = "premium"
-            st.session_state.user_role = "premium"
-            st.balloons(); st.rerun()
+        st.markdown('<div class="premium-box"><div class="premium-title">⚪ Standart</div><p>Temel AI Sohbeti<br>Giriş Seviyesi Yanıtlar</p><div class="price">ÜCRETSİZ</div><div class="duration">Süresiz</div></div>', unsafe_allow_html=True)
+        if st.button("Standart'a Dön", key="buy_free"):
+            st.session_state.users_db[user_name]["role"] = "free"; st.session_state.user_role = "free"; st.rerun()
+
     with col2:
-        st.markdown("""<div class="premium-box"><div class="premium-title">💻 Yazılımcı Paketi</div><p>Gelişmiş Kod Analizi • Hata Ayıklayıcı</p><div class="price">Yakında</div></div>""", unsafe_allow_html=True)
-        # BURADA HATA OLUYORDU - UNIQUE KEY EKLEDİK
-        st.button("Beklemede...", key="btn_wait_p2", disabled=True)
+        st.markdown('<div class="premium-box"><div class="premium-title">🥁 Müzisyen</div><p>Sesli Metronom<br>Makam Analizi<br>Llama 70B</p><div class="price">0 TL</div><div class="duration">3 Ay Geçerli</div></div>', unsafe_allow_html=True)
+        if st.button("Müzisyen Paketini Al", key="buy_muz"):
+            st.session_state.users_db[user_name]["role"] = "müzisyen"; st.session_state.user_role = "müzisyen"; st.balloons(); st.rerun()
+
     with col3:
-        st.markdown("""<div class="premium-box"><div class="premium-title">👑 Full Paket</div><p>Tüm Özellikler Dahil • Özel Destek</p><div class="price">Yakında</div></div>""", unsafe_allow_html=True)
-        # BURADA HATA OLUYORDU - UNIQUE KEY EKLEDİK
-        st.button("Beklemede...", key="btn_wait_p3", disabled=True)
+        st.markdown('<div class="premium-box"><div class="premium-title">💻 Yazılımcı</div><p>Kod Hata Ayıklama<br>Algoritma Desteği<br>Python Uzmanı</p><div class="price">0 TL</div><div class="duration">3 Ay Geçerli</div></div>', unsafe_allow_html=True)
+        if st.button("Yazılımcı Paketini Al", key="buy_yaz"):
+            st.session_state.users_db[user_name]["role"] = "yazılımcı"; st.session_state.user_role = "yazılımcı"; st.balloons(); st.rerun()
 
-# --- CHAT VE GELİŞMİŞ METRONOM ---
+    with col4:
+        st.markdown('<div class="premium-box"><div class="premium-title">👑 Full Paket</div><p>Tüm Özellikler<br>Öncelikli Yanıt<br>Metronom + Kod</p><div class="price">0 TL</div><div class="duration">3 Ay Geçerli</div></div>', unsafe_allow_html=True)
+        if st.button("Full Paketi Al", key="buy_full"):
+            st.session_state.users_db[user_name]["role"] = "full"; st.session_state.user_role = "full"; st.balloons(); st.rerun()
+
+# --- CHAT SAYFASI ---
 elif st.session_state.page == "Chat":
-    if user_role == "free":
-        st.warning("⚠️ Lütfen 'Premium Paketler' sayfasından ücretsiz üyeliğinizi başlatın.")
-    else:
-        st.title("🤖 @bi AI")
-        
-        with st.expander("🥁 Türk Müziği Sesli Metronom (Gelişmiş)"):
+    st.title(f"🤖 @bi AI - {user_role.upper()}")
+    
+    # Müzisyen veya Full ise Metronomu göster
+    if user_role in ["müzisyen", "full", "admin"]:
+        with st.expander("🥁 Türk Müziği Sesli Metronom"):
             c1, c2 = st.columns(2)
-            u_sec = c1.selectbox("Usul Seç", ["Düyek (4/4)", "Aksak (9/8)", "Semai (3/4)", "Yürük Semai (6/8)"], key="sel_usul")
-            bpm = c2.number_input("BPM", 40, 220, 120, key="num_bpm")
-            
-            if st.button("▶️ Başlat", key="btn_metro_start"):
-                ms = (60 / bpm) * 1000
-                if "Düyek" in u_sec: p_js = '["D", "T", "K", "T"]'
-                elif "Aksak" in u_sec: p_js = '["D", "T", "T", "D", "T"]'
-                elif "Semai" in u_sec: p_js = '["D", "T", "T"]'
-                elif "Yürük Semai" in u_sec: p_js = '["D", "K", "T", "D", "T", "T"]'
-                else: p_js = '["D", "T"]'
+            u_sec = c1.selectbox("Usul", ["Düyek", "Aksak", "Semai"], key="u")
+            bpm = c2.number_input("BPM", 40, 220, 120, key="b")
+            if st.button("▶️ Başlat"):
+                p_js = '["D","T","K","T"]' if u_sec=="Düyek" else ('["D","T","T","D","T"]' if u_sec=="Aksak" else '["D","T","T"]')
+                js = f"<script>if(window.ctx)window.ctx.close(); window.ctx=new AudioContext(); var p={p_js},i=0; window.m=setInterval(function(){{var c=p[i]; var o=window.ctx.createOscillator(); var g=window.ctx.createGain(); o.connect(g); g.connect(window.ctx.destination); o.frequency.value=(c=='D'?120:(c=='T'?440:280)); g.gain.setValueAtTime(0.5,window.ctx.currentTime); g.gain.exponentialRampToValueAtTime(0.001,window.ctx.currentTime+0.2); o.start(); o.stop(window.ctx.currentTime+0.2); i=(i+1)%p.length;}},{(60/bpm)*1000});</script>"
+                st.components.v1.html(js + f'<p style="color:#00ff00;text-align:center;">🥁 {u_sec} çalıyor...</p>', height=50)
+            if st.button("⏹️ Durdur"):
+                st.components.v1.html("<script>clearInterval(window.m); window.ctx.close();</script>", height=0); st.rerun()
 
-                js_metronom = f"""
-                <script>
-                    if(window.biCtx) window.biCtx.close();
-                    window.biCtx = new (window.AudioContext || window.webkitAudioContext)();
-                    var p = {p_js}; var i = 0;
-                    function play(freq, dur, vol) {{
-                        var o = window.biCtx.createOscillator(); var g = window.biCtx.createGain();
-                        o.connect(g); g.connect(window.biCtx.destination);
-                        o.type = 'sine'; o.frequency.value = freq;
-                        g.gain.setValueAtTime(vol, window.biCtx.currentTime);
-                        g.gain.exponentialRampToValueAtTime(0.001, window.biCtx.currentTime + dur);
-                        o.start(); o.stop(window.biCtx.currentTime + dur);
-                    }}
-                    window.mLoop = setInterval(function() {{
-                        var c = p[i];
-                        if(c == "D") play(120, 0.4, 0.8);
-                        else if(c == "T") play(440, 0.1, 0.5);
-                        else if(c == "K") play(280, 0.15, 0.6);
-                        i = (i + 1) % p.length;
-                    }}, {ms});
-                </script>
-                <div style="color:#00ff00; text-align:center; padding:10px; border:2px dashed #00ff00; border-radius:10px;">
-                    🥁 {u_sec} Devrede... ({bpm} BPM)
-                </div>
-                """
-                st.components.v1.html(js_metronom, height=100)
+    # Chat Mesajları
+    for m in st.session_state.messages:
+        with st.chat_message(m["role"]): st.markdown(m["content"])
 
-            if st.button("⏹️ Durdur", key="btn_metro_stop"):
-                st.components.v1.html("<script>clearInterval(window.mLoop); if(window.biCtx) window.biCtx.close();</script>", height=0)
-                st.rerun()
+    client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+    if pr := st.chat_input("Mesajını yaz..."):
+        st.session_state.messages.append({"role": "user", "content": pr})
+        with st.chat_message("user"): st.markdown(pr)
+        
+        # Role göre Sistem Promptu
+        if user_role == "yazılımcı": sys = "Sen bir yazılım uzmanısın. Sahibin Atakan Türedi."
+        elif user_role == "müzisyen": sys = "Sen bir Türk Müziği uzmanısın. Sahibin Atakan Türedi."
+        elif user_role == "full": sys = "Sen her konuda uzman bir asistan @bi AI'sın. Sahibin Atakan Türedi."
+        else: sys = "Sen @bi AI asistanısın. Sahibin Atakan Türedi. Basit ve kısa cevaplar ver."
 
-        for m in st.session_state.messages:
-            with st.chat_message(m["role"]): st.markdown(m["content"])
-
-        client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-        if pr := st.chat_input("Mesajını yaz..."):
-            st.session_state.messages.append({"role": "user", "content": pr})
-            with st.chat_message("user"): st.markdown(pr)
-            sys = "Sahibin Atakan Türedi. Sen bir müzik uzmanı AI'sısın."
-            full_m = [{"role": "system", "content": sys}] + st.session_state.messages
-            res = client.chat.completions.create(model="llama-3.3-70b-versatile", messages=full_m)
-            ans = res.choices[0].message.content
-            with st.chat_message("assistant"): st.markdown(ans)
-            st.session_state.messages.append({"role": "assistant", "content": ans})
+        full_m = [{"role": "system", "content": sys}] + st.session_state.messages
+        res = client.chat.completions.create(model="llama-3.3-70b-versatile", messages=full_m)
+        ans = res.choices[0].message.content
+        with st.chat_message("assistant"): st.markdown(ans)
+        st.session_state.messages.append({"role": "assistant", "content": ans})
