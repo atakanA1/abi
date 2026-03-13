@@ -1,38 +1,10 @@
 import streamlit as st
 from groq import Groq
-from streamlit_google_auth import Authenticate
-import json
 
 # 1. Sayfa Ayarları
 st.set_page_config(page_title="@bi AI", page_icon="🤖", layout="wide")
 
-# 2. Google Giriş Sistemi (Yeni Versiyon Uyumluluk Modu)
-if "GOOGLE_JSON_DOSYASI" not in st.secrets:
-    st.error("Secrets: GOOGLE_JSON_DOSYASI bulunamadı!")
-    st.stop()
-
-google_secrets = json.loads(st.secrets["GOOGLE_JSON_DOSYASI"])
-
-# Kütüphanenin en güncel hali genellikle login() çağrıldığında kontrol yapar
-authenticator = Authenticate(
-    secret_path=google_secrets, 
-    cookie_name='bi_session',
-    cookie_key='atakan_bi_key',
-    redirect_uri="https://yapay-abi.streamlit.app",
-)
-
-# Eski check_authenticator yerine doğrudan login durumunu kontrol ediyoruz
-if not st.session_state.get('connected'):
-    st.title("🤖 @bi AI")
-    # Login butonu kullanıcıyı Google'a yönlendirir
-    authenticator.login()
-    st.stop()
-
-# --- GİRİŞ BAŞARILIYSA BURADAN DEVAM EDER ---
-user_info = st.session_state.get('user_info', {})
-user_name = user_info.get('name', 'Atakan')
-
-# CSS (Yeşil-Siyah Tema)
+# 2. CSS Stil (Yeşil-Siyah Tema)
 st.markdown("""
     <style>
     .stApp { background-color: #0e1117; color: #e0e0e0; }
@@ -41,6 +13,25 @@ st.markdown("""
     .stChatInput > div > div > input { color: #00ff00; }
     </style>
     """, unsafe_allow_html=True)
+
+# 3. Basit ve Güvenli Giriş Sistemi (Kütüphanesiz)
+if "authenticated" not in st.session_state:
+    st.session_state.authenticated = False
+
+if not st.session_state.authenticated:
+    st.title("🤖 @bi AI Giriş")
+    # Atakan, buraya kendine özel bir şifre koyabilirsin
+    password = st.text_input("Giriş Şifresi", type="password")
+    if st.button("Giriş Yap"):
+        if password == "bi2026": # Şifreni buradan değiştir
+            st.session_state.authenticated = True
+            st.rerun()
+        else:
+            st.error("Hatalı şifre!")
+    st.stop()
+
+# --- GİRİŞ BAŞARILIYSA ---
+user_name = "Atakan" # Şimdilik sabit, sonra Google'dan çekeriz
 
 # Bot Kontrolü
 if "is_human" not in st.session_state:
@@ -53,15 +44,13 @@ if not st.session_state.is_human:
         st.rerun()
     st.stop()
 
-# Sidebar ve Çıkış
+# Ana Sohbet Ekranı
+st.title("🤖 @bi AI")
 with st.sidebar:
     st.header(f"👤 {user_name}")
     if st.button("Çıkış Yap"):
-        st.session_state.connected = False
+        st.session_state.authenticated = False
         st.rerun()
-
-# Ana Sohbet Ekranı
-st.title("🤖 @bi AI")
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -70,6 +59,7 @@ for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
+# Groq Bağlantısı
 client = Groq(api_key=st.secrets["GROQ_API_KEY"])
 
 if prompt := st.chat_input("Mesajını yaz..."):
