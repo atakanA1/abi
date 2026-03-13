@@ -18,6 +18,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 # 3. Google Giriş Sistemi (Kasadaki veriyi kullanır)
+# --- 3. Google Giriş Sistemi (Yeni Kütüphane Versiyonuna Uygun) ---
 try:
     if "GOOGLE_JSON_DOSYASI" not in st.secrets:
         st.error("Kasa hatası: GOOGLE_JSON_DOSYASI bulunamadı!")
@@ -25,16 +26,27 @@ try:
         
     google_secrets_dict = json.loads(st.secrets["GOOGLE_JSON_DOSYASI"])
     
+    # 'secret_path' hatasını çözmek için parametre ismini kaldırıp direkt veriyi veriyoruz
     authenticator = Authenticate(
-        secret_path=google_secrets_dict, 
+        google_secrets_dict, # Direkt veriyi gönderiyoruz, isim yazmıyoruz
         cookie_name='bi_session',
         cookie_key='atakan_ozel_anahtar_99',
         redirect_uri="https://yapay-abi.streamlit.app",
     )
     authenticator.check_authenticator()
 except Exception as e:
-    st.error(f"Sistem başlatılamadı: {e}")
-    st.stop()
+    # Eğer yukarıdaki de yemezse (bazı versiyonlarda config_data ister)
+    try:
+        authenticator = Authenticate(
+            config_data=google_secrets_dict, 
+            cookie_name='bi_session',
+            cookie_key='atakan_ozel_anahtar_99',
+            redirect_uri="https://yapay-abi.streamlit.app",
+        )
+        authenticator.check_authenticator()
+    except Exception as e2:
+        st.error(f"Sistem başlatılamadı (Kütüphane Hatası): {e2}")
+        st.stop()
 
 # Giriş Yapılmamışsa
 if not st.session_state.get('connected'):
@@ -98,3 +110,4 @@ if prompt := st.chat_input("Mesajını yaz..."):
         message_placeholder.markdown(full_response)
     
     st.session_state.messages.append({"role": "assistant", "content": full_response})
+
