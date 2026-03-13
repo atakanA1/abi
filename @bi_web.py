@@ -4,161 +4,145 @@ import uuid
 import time
 
 # 1. Sayfa Ayarları
-st.set_page_config(page_title="@bi AI - Premium Müzisyen", page_icon="🤖", layout="wide")
+st.set_page_config(page_title="@bi AI - Premium Dünyası", page_icon="💎", layout="wide")
 
-# 2. Veritabanı ve Oturum Yönetimi (Session State)
+# 2. Veritabanı ve Oturum Yönetimi
 if "users_db" not in st.session_state:
-    st.session_state.users_db = {
-        "Atakan": {"pass": "bi2026", "role": "admin"}
-    }
-
+    st.session_state.users_db = {"Atakan": {"pass": "bi2026", "role": "admin"}}
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
-
 if "messages" not in st.session_state:
     st.session_state.messages = []
+if "page" not in st.session_state:
+    st.session_state.page = "Chat" # Varsayılan sayfa
 
-# 3. Giriş ve Kayıt Paneli
+# 3. Giriş Sistemi
 if not st.session_state.authenticated:
     st.markdown("<h1 style='text-align: center; color: #00ff00;'>🤖 @bi AI</h1>", unsafe_allow_html=True)
-    
     tab_l, tab_r = st.tabs(["Giriş Yap", "Kayıt Ol"])
-    
     with tab_l:
         u = st.text_input("Kullanıcı Adı", key="login_u")
         p = st.text_input("Şifre", type="password", key="login_p")
-        
-        if st.button("Giriş Yap", key="btn_login"):
+        if st.button("Giriş Yap"):
             user_data = st.session_state.users_db.get(u)
-            if user_data:
-                if user_data["pass"] == p:
-                    st.session_state.authenticated = True
-                    st.session_state.user_name = u
-                    st.session_state.user_role = user_data["role"]
-                    st.success("Giriş başarılı!")
-                    time.sleep(1)
-                    st.rerun()
-                else:
-                    st.error("Hatalı şifre!")
-            else:
-                st.error("Kullanıcı bulunamadı!")
-                
+            if user_data and user_data["pass"] == p:
+                st.session_state.authenticated = True
+                st.session_state.user_name = u
+                st.session_state.user_role = user_data["role"]
+                st.rerun()
+            else: st.error("Hatalı giriş!")
     with tab_r:
-        nu = st.text_input("Yeni Kullanıcı Adı", key="reg_u")
+        nu = st.text_input("Yeni Kullanıcı", key="reg_u")
         np = st.text_input("Yeni Şifre", type="password", key="reg_p")
-        if st.button("Kayıt Ol", key="btn_reg"):
+        if st.button("Kayıt Ol"):
             if nu and np:
-                if nu in st.session_state.users_db:
-                    st.warning("Bu kullanıcı adı zaten alınmış.")
-                else:
-                    st.session_state.users_db[nu] = {"pass": np, "role": "free"}
-                    st.success("Kayıt Başarılı! Şimdi Giriş Yapabilirsin.")
-            else:
-                st.error("Lütfen tüm alanları doldur.")
+                st.session_state.users_db[nu] = {"pass": np, "role": "free"}
+                st.success("Kayıt başarılı!")
     st.stop()
 
 # --- GİRİŞ BAŞARILI ---
-user_name = st.session_state.user_name
 user_role = st.session_state.user_role
 
-# 4. Tasarım ve Stil (Yeşil-Siyah Tema)
+# 4. Tasarım CSS
 st.markdown("""
     <style>
     .stApp { background-color: #0e1117; color: #e0e0e0; }
     section[data-testid="stSidebar"] { background-color: #1a1c24; border-right: 2px solid #00ff00; }
-    .premium-card {
-        background: linear-gradient(135deg, #1a1c24 0%, #004d00 100%);
-        padding: 30px; border-radius: 15px; border: 2px solid #00ff00;
-        text-align: center; margin: 20px 0;
+    .premium-box {
+        background: #1a1c24; border: 1px solid #00ff00; padding: 20px;
+        border-radius: 15px; text-align: center; margin-bottom: 15px;
     }
-    .price-tag { font-size: 35px; color: #00ff00; font-weight: bold; }
+    .premium-title { color: #00ff00; font-size: 22px; font-weight: bold; }
+    .price { font-size: 28px; color: #FFD700; }
     h1, h2, h3 { color: #00ff00 !important; }
-    .stChatInput > div > div > input { color: #00ff00; }
     </style>
     """, unsafe_allow_html=True)
 
-# 5. Sidebar (Yan Menü)
+# 5. SIDEBAR (Sayfa Navigasyonu)
 with st.sidebar:
-    role_label = "⭐ PREMIUM ADMIN" if user_role == "admin" else ("✨ PREMIUM" if user_role == "premium" else "🆓 Ücretsiz Üye")
-    st.markdown(f"### 👤 {user_name}\n**{role_label}**")
+    st.title(f"👤 {st.session_state.user_name}")
+    st.write(f"Rütbe: **{user_role.upper()}**")
+    st.write("---")
     
-    if st.button("➕ Yeni Sohbet"):
-        st.session_state.messages = []
+    # Menü Seçenekleri
+    if st.button("💬 @bi AI Sohbet"):
+        st.session_state.page = "Chat"
+        st.rerun()
+    
+    if st.button("💎 Premium Paketler"):
+        st.session_state.page = "Premium"
         st.rerun()
         
     st.write("---")
-    if st.button("🚪 Çıkış Yap"):
+    if st.button("➕ Sohbeti Temizle"):
+        st.session_state.messages = []
+        st.rerun()
+    if st.button("🚪 Çıkış"):
         st.session_state.authenticated = False
         st.rerun()
 
-# 6. Premium Kontrolü ve Satın Alma Paneli
-if user_role == "free":
-    st.title("🚀 @bi AI Premium'a Hoş Geldin")
-    st.markdown(f"""
-    <div class="premium-card">
-        <h2>🎵 Türk Müziği Premium Paketi</h2>
-        <p>Llama-3.3-70B Zekası • Türk Müziği Usul Metronomu • Makam ve Nota Analizi</p>
-        <div class="price-tag">0 TL <span style='font-size:18px; color:#aaa;'>/ Aylık</span></div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    if st.button("ŞİMDİ ÜCRETSİZ SATIN AL"):
-        with st.spinner("Ödeme işlemi doğrulanıyor..."):
-            time.sleep(2)
-            st.session_state.users_db[user_name]["role"] = "premium"
-            st.session_state.user_role = "premium"
-            st.balloons()
-            st.success("Tebrikler Premium oldunuz!")
-            time.sleep(1)
-            st.rerun()
-    st.stop()
+# 6. SAYFA YÖNETİMİ
 
-# --- PREMIUM VE ADMIN ANA EKRAN ---
-st.title("🤖 @bi AI")
+# --- PREMİUM SAYFASI ---
+if st.session_state.page == "Premium":
+    st.title("💎 Premium Paketler")
+    st.subheader("İhtiyacına en uygun @bi AI gücünü seç.")
 
-# Türk Müziği Metronomu (Premium Özellik)
-with st.expander("🥁 Türk Müziği Metronomu (Premium Özel)"):
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
+
     with col1:
-        usul = st.selectbox("Usul Seç", ["Düyek", "Aksak", "Semai"])
+        st.markdown("""<div class="premium-box">
+            <div class="premium-title">🎵 Müzisyen Paketi</div>
+            <p>Sesli Metronom • Makam Analizi • Llama 70B</p>
+            <div class="price">0 TL</div></div>""", unsafe_allow_html=True)
+        if st.button("Müzik Premium Al", key="p1"):
+            st.session_state.users_db[st.session_state.user_name]["role"] = "premium"
+            st.session_state.user_role = "premium"
+            st.balloons(); st.rerun()
+
     with col2:
-        bpm = st.slider("Tempo (BPM)", 40, 200, 120)
-    
-    if st.button("Ritmi Başlat"):
-        p = st.empty()
-        pattern = ["DÜM", "tek", "KA", "tek"] if usul == "Düyek" else (["DÜM", "tek", "tek", "DÜM", "tek"] if usul == "Aksak" else ["DÜM", "tek", "tek"])
-        for _ in range(2): # 2 döngü
-            for vuruş in pattern:
-                p.markdown(f"<h1 style='text-align:center; color:#00ff00;'>{vuruş}</h1>", unsafe_allow_html=True)
-                time.sleep(60/bpm)
-        p.empty()
+        st.markdown("""<div class="premium-box">
+            <div class="premium-title">💻 Yazılımcı Paketi</div>
+            <p>Gelişmiş Kod Analizi • Python Uzmanı • Limitsiz Mesaj</p>
+            <div class="price">Yakında</div></div>""", unsafe_allow_html=True)
+        st.button("Beklemede...", key="p2", disabled=True)
 
-# Chat Sistemi
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+    with col3:
+        st.markdown("""<div class="premium-box">
+            <div class="premium-title">👑 Full Paket</div>
+            <p>Tüm Özellikler • Özel Destek • Atakan Türedi Onayı</p>
+            <div class="price">Yakında</div></div>""", unsafe_allow_html=True)
+        st.button("Beklemede...", key="p3", disabled=True)
 
-# Groq Bağlantısı
-client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+# --- CHAT SAYFASI ---
+elif st.session_state.page == "Chat":
+    if user_role == "free":
+        st.warning("⚠️ Sohbet etmek için lütfen 'Premium Paketler' sayfasından bir paket seçin!")
+    else:
+        st.title("🤖 @bi AI")
+        
+        # Sesli Metronom (Müzik Premium özelliği)
+        with st.expander("🥁 Türk Müziği Sesli Metronom"):
+            bpm = st.number_input("BPM", 40, 220, 120)
+            if st.button("▶️ Başlat"):
+                ms = (60/bpm)*1000
+                js = f"<script>if(window.m)clearInterval(window.m); var d=new Audio('https://www.soundjay.com/buttons/sounds/button-2.mp3'); var t=new Audio('https://www.soundjay.com/buttons/sounds/button-3.mp3'); var p=['D','T','K','T']; var i=0; window.m=setInterval(function(){{if(p[i]=='D')d.play();else t.play(); i=(i+1)%p.length;}},{ms});</script>"
+                st.components.v1.html(js, height=0)
+            if st.button("⏹️ Durdur"):
+                st.components.v1.html("<script>clearInterval(window.m);</script>", height=0)
 
-if prompt := st.chat_input("Atakan Türedi'nin AI asistanına bir şey sor..."):
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    with st.chat_message("user"):
-        st.markdown(prompt)
+        # Chat
+        for m in st.session_state.messages:
+            with st.chat_message(m["role"]): st.markdown(m["content"])
 
-    # Sistem Talimatı (Sahibi Atakan Türedi)
-    system_prompt = """Senin ismin @bi AI. Senin sahibin ve yaratıcın Atakan Türedi'dir. 
-    Eğer sana 'sahibin kim' gibi sorular sorulursa şu cevabı ver: 
-    'Atakan Türedi Bey. Tabii Kendisine Buralardan Ulaşabilirsiniz:
-    Youtube: https://www.youtube.com/@TheRealAtakan
-    İnstagram: https://www.instagram.com/atakanturedi9/'"""
-
-    with st.chat_message("assistant"):
-        full_messages = [{"role": "system", "content": system_prompt}] + st.session_state.messages
-        response = client.chat.completions.create(
-            model="llama-3.3-70b-versatile",
-            messages=full_messages
-        )
-        answer = response.choices[0].message.content
-        st.markdown(answer)
-        st.session_state.messages.append({"role": "assistant", "content": answer})
+        client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+        if pr := st.chat_input("Atakan Türedi'nin AI asistanına yaz..."):
+            st.session_state.messages.append({"role": "user", "content": pr})
+            with st.chat_message("user"): st.markdown(pr)
+            
+            sys = "Sahibin Atakan Türedi. Sen bir müzik ve teknoloji AI'sısın."
+            full_m = [{"role": "system", "content": sys}] + st.session_state.messages
+            res = client.chat.completions.create(model="llama-3.3-70b-versatile", messages=full_m)
+            ans = res.choices[0].message.content
+            with st.chat_message("assistant"): st.markdown(ans)
+            st.session_state.messages.append({"role": "assistant", "content": ans})
