@@ -14,9 +14,9 @@ if "authenticated" not in st.session_state:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 if "page" not in st.session_state:
-    st.session_state.page = "Chat" # Varsayılan sayfa
+    st.session_state.page = "Chat"
 
-# 3. Giriş Sistemi
+# 3. Giriş Sistemi (Hatasız Mantık)
 if not st.session_state.authenticated:
     st.markdown("<h1 style='text-align: center; color: #00ff00;'>🤖 @bi AI</h1>", unsafe_allow_html=True)
     tab_l, tab_r = st.tabs(["Giriş Yap", "Kayıt Ol"])
@@ -30,18 +30,19 @@ if not st.session_state.authenticated:
                 st.session_state.user_name = u
                 st.session_state.user_role = user_data["role"]
                 st.rerun()
-            else: st.error("Hatalı giriş!")
+            else: st.error("Kullanıcı bulunamadı veya şifre hatalı!")
     with tab_r:
         nu = st.text_input("Yeni Kullanıcı", key="reg_u")
         np = st.text_input("Yeni Şifre", type="password", key="reg_p")
         if st.button("Kayıt Ol"):
             if nu and np:
                 st.session_state.users_db[nu] = {"pass": np, "role": "free"}
-                st.success("Kayıt başarılı!")
+                st.success("Kayıt başarılı! Giriş yapabilirsin.")
     st.stop()
 
 # --- GİRİŞ BAŞARILI ---
 user_role = st.session_state.user_role
+user_name = st.session_state.user_name
 
 # 4. Tasarım CSS
 st.markdown("""
@@ -58,13 +59,12 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 5. SIDEBAR (Sayfa Navigasyonu)
+# 5. SIDEBAR (Sol Menü)
 with st.sidebar:
-    st.title(f"👤 {st.session_state.user_name}")
+    st.title(f"👤 {user_name}")
     st.write(f"Rütbe: **{user_role.upper()}**")
     st.write("---")
     
-    # Menü Seçenekleri
     if st.button("💬 @bi AI Sohbet"):
         st.session_state.page = "Chat"
         st.rerun()
@@ -74,7 +74,7 @@ with st.sidebar:
         st.rerun()
         
     st.write("---")
-    if st.button("➕ Sohbeti Temizle"):
+    if st.button("➕ Sohbeti Sıfırla"):
         st.session_state.messages = []
         st.rerun()
     if st.button("🚪 Çıkış"):
@@ -83,11 +83,9 @@ with st.sidebar:
 
 # 6. SAYFA YÖNETİMİ
 
-# --- PREMİUM SAYFASI ---
+# --- PREMİUM MARKET SAYFASI ---
 if st.session_state.page == "Premium":
-    st.title("💎 Premium Paketler")
-    st.subheader("İhtiyacına en uygun @bi AI gücünü seç.")
-
+    st.title("💎 Premium Market")
     col1, col2, col3 = st.columns(3)
 
     with col1:
@@ -95,43 +93,68 @@ if st.session_state.page == "Premium":
             <div class="premium-title">🎵 Müzisyen Paketi</div>
             <p>Sesli Metronom • Makam Analizi • Llama 70B</p>
             <div class="price">0 TL</div></div>""", unsafe_allow_html=True)
-        if st.button("Müzik Premium Al", key="p1"):
-            st.session_state.users_db[st.session_state.user_name]["role"] = "premium"
+        if st.button("Hemen Etkinleştir", key="p1"):
+            st.session_state.users_db[user_name]["role"] = "premium"
             st.session_state.user_role = "premium"
             st.balloons(); st.rerun()
 
     with col2:
         st.markdown("""<div class="premium-box">
             <div class="premium-title">💻 Yazılımcı Paketi</div>
-            <p>Gelişmiş Kod Analizi • Python Uzmanı • Limitsiz Mesaj</p>
+            <p>Hata Ayıklayıcı • Kod Analizi • Özel Model</p>
             <div class="price">Yakında</div></div>""", unsafe_allow_html=True)
-        st.button("Beklemede...", key="p2", disabled=True)
+        st.button("Çok Yakında", key="p2", disabled=True)
 
     with col3:
         st.markdown("""<div class="premium-box">
             <div class="premium-title">👑 Full Paket</div>
-            <p>Tüm Özellikler • Özel Destek • Atakan Türedi Onayı</p>
+            <p>Tüm Premium Özellikler • Limitsiz Erişim</p>
             <div class="price">Yakında</div></div>""", unsafe_allow_html=True)
-        st.button("Beklemede...", key="p3", disabled=True)
+        st.button("Çok Yakında", key="p3", disabled=True)
 
 # --- CHAT SAYFASI ---
 elif st.session_state.page == "Chat":
     if user_role == "free":
-        st.warning("⚠️ Sohbet etmek için lütfen 'Premium Paketler' sayfasından bir paket seçin!")
+        st.warning("⚠️ Sohbet özelliği kilitli. Lütfen 'Premium Paketler' sayfasından ücretsiz üyeliğinizi başlatın.")
     else:
         st.title("🤖 @bi AI")
         
-        # Sesli Metronom (Müzik Premium özelliği)
+        # SESLİ METRONOM (SES SENTEZLEYİCİ)
         with st.expander("🥁 Türk Müziği Sesli Metronom"):
-            bpm = st.number_input("BPM", 40, 220, 120)
+            c1, c2 = st.columns(2)
+            u_sec = c1.selectbox("Usul", ["Düyek (4/4)", "Aksak (9/8)", "Semai (3/4)"])
+            bpm = c2.number_input("BPM", 40, 220, 120)
+            
             if st.button("▶️ Başlat"):
-                ms = (60/bpm)*1000
-                js = f"<script>if(window.m)clearInterval(window.m); var d=new Audio('https://www.soundjay.com/buttons/sounds/button-2.mp3'); var t=new Audio('https://www.soundjay.com/buttons/sounds/button-3.mp3'); var p=['D','T','K','T']; var i=0; window.m=setInterval(function(){{if(p[i]=='D')d.play();else t.play(); i=(i+1)%p.length;}},{ms});</script>"
-                st.components.v1.html(js, height=0)
-            if st.button("⏹️ Durdur"):
-                st.components.v1.html("<script>clearInterval(window.m);</script>", height=0)
+                ms = (60 / bpm) * 1000
+                p_list = ["D","T","T","T"] if "Düyek" in u_sec else (["D","T","T","D","T"] if "Aksak" in u_sec else ["D","T","T"])
+                
+                js_metronom = f"""
+                <script>
+                    if(window.biCtx) window.biCtx.close();
+                    window.biCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    var p = {p_list}; var i = 0;
+                    function play(freq, dur) {{
+                        var o = window.biCtx.createOscillator(); var g = window.biCtx.createGain();
+                        o.connect(g); g.connect(window.biCtx.destination);
+                        o.frequency.value = freq; g.gain.setValueAtTime(0.5, window.biCtx.currentTime);
+                        g.gain.exponentialRampToValueAtTime(0.01, window.biCtx.currentTime + dur);
+                        o.start(); o.stop(window.biCtx.currentTime + dur);
+                    }}
+                    window.mLoop = setInterval(function() {{
+                        if(p[i] == "D") play(150, 0.25); else play(400, 0.15);
+                        i = (i + 1) % p.length;
+                    }}, {ms});
+                </script>
+                <div style="color:#00ff00; text-align:center; padding:10px; border:1px solid #00ff00;">🥁 {u_sec} Çalıyor...</div>
+                """
+                st.components.v1.html(js_metronom, height=70)
 
-        # Chat
+            if st.button("⏹️ Durdur"):
+                st.components.v1.html("<script>clearInterval(window.mLoop); if(window.biCtx) window.biCtx.close();</script>", height=0)
+                st.rerun()
+
+        # Chat Alanı
         for m in st.session_state.messages:
             with st.chat_message(m["role"]): st.markdown(m["content"])
 
@@ -140,7 +163,7 @@ elif st.session_state.page == "Chat":
             st.session_state.messages.append({"role": "user", "content": pr})
             with st.chat_message("user"): st.markdown(pr)
             
-            sys = "Sahibin Atakan Türedi. Sen bir müzik ve teknoloji AI'sısın."
+            sys = "Sahibin Atakan Türedi. Sen bir müzik ve teknoloji uzmanı AI'sın."
             full_m = [{"role": "system", "content": sys}] + st.session_state.messages
             res = client.chat.completions.create(model="llama-3.3-70b-versatile", messages=full_m)
             ans = res.choices[0].message.content
