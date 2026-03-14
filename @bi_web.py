@@ -5,7 +5,7 @@ import json
 import os
 
 # --- 1. VERİ YÖNETİMİ (JSON DATABASE) ---
-DB_FILE = "bi_ai_ultimate_db.json"
+DB_FILE = "bi_ai_final_db.json"
 
 def load_db():
     if os.path.exists(DB_FILE):
@@ -23,120 +23,128 @@ if "db" not in st.session_state:
     st.session_state.db = load_db()
 
 # --- 2. TASARIM VE CSS ---
-st.set_page_config(page_title="@bi AI - Kayıtlı & Hafızalı", layout="wide")
+st.set_page_config(page_title="@bi AI - Premium & Hafızalı", layout="wide")
 st.markdown("""
     <style>
     .stApp { background-color: #0e1117; color: #e0e0e0; }
     section[data-testid="stSidebar"] { background-color: #1a1c24; border-right: 2px solid #00ff00; }
+    .premium-box { background: #1a1c24; border: 1px solid #00ff00; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 10px; }
+    .price { font-size: 24px; color: #FFD700; font-weight: bold; }
     h1, h2, h3 { color: #00ff00 !important; }
-    .stButton>button { border-radius: 10px; border: 1px solid #00ff00; background: transparent; color: #00ff00; width: 100%; }
-    .stButton>button:hover { background: #00ff00; color: #0e1117; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- 3. GİRİŞ VE KAYIT SİSTEMİ (BURASI GELDİ!) ---
+# --- 3. GİRİŞ VE KAYIT SİSTEMİ ---
 if "auth" not in st.session_state:
     st.session_state.auth = False
 
 if not st.session_state.auth:
     st.markdown("<h1 style='text-align: center;'>🤖 @bi AI Dünyası</h1>", unsafe_allow_html=True)
-    tab_login, tab_reg = st.tabs(["Giriş Yap", "Kayıt Ol"])
+    t_login, t_reg = st.tabs(["Giriş Yap", "Kayıt Ol"])
     
-    with tab_login:
-        u = st.text_input("Kullanıcı Adı", key="login_u")
-        p = st.text_input("Şifre", type="password", key="login_p")
-        if st.button("Giriş", key="btn_login"):
+    with t_login:
+        u = st.text_input("Kullanıcı Adı", key="l_u")
+        p = st.text_input("Şifre", type="password", key="l_p")
+        if st.button("Giriş", key="b_l"):
             if u in st.session_state.db and st.session_state.db[u]["pass"] == p:
                 st.session_state.auth = True
                 st.session_state.user = u
                 st.rerun()
-            else: st.error("Kullanıcı bulunamadı veya şifre yanlış!")
+            else: st.error("Hatalı giriş!")
             
-    with tab_reg:
-        nu = st.text_input("Yeni Kullanıcı Adı", key="reg_u")
-        np = st.text_input("Yeni Şifre", type="password", key="reg_p")
-        if st.button("Kayıt Ol ve Başla", key="btn_reg"):
+    with t_reg:
+        nu = st.text_input("Yeni Kullanıcı", key="r_u")
+        np = st.text_input("Yeni Şifre", type="password", key="r_p")
+        if st.button("Kayıt Ol", key="b_r"):
             if nu and np:
-                if nu in st.session_state.db:
-                    st.warning("Bu kullanıcı zaten mevcut!")
-                else:
+                if nu not in st.session_state.db:
                     st.session_state.db[nu] = {"pass": np, "role": "free", "chats": {}}
-                    save_db(st.session_state.db)
-                    st.success("Kaydın yapıldı Atakan'ın asistanına hoş geldin! Şimdi giriş yap.")
-            else: st.error("Lütfen alanları doldur!")
+                    save_db(st.session_state.db); st.success("Kayıt tamam! Giriş yap.")
+                else: st.warning("Bu kullanıcı zaten var.")
     st.stop()
 
 # --- 4. SOL MENÜ (GEÇMİŞ SOHBETLER) ---
 user = st.session_state.user
-user_data = st.session_state.db[user]
+user_role = st.session_state.db[user].get("role", "free")
 
 with st.sidebar:
     st.title(f"👤 {user}")
-    st.write(f"Paket: **{user_data['role'].upper()}**")
+    st.write(f"Paket: **{user_role.upper()}**")
     
-    if st.button("➕ Yeni Sohbet", key="new_chat"):
-        chat_id = str(int(time.time()))
-        st.session_state.db[user]["chats"][chat_id] = {"title": "Yeni Sohbet", "messages": []}
-        st.session_state.active_chat = chat_id
-        save_db(st.session_state.db)
-        st.rerun()
-    
+    # Navigasyon
+    page = st.radio("Menü", ["💬 Sohbet", "💎 Market"])
     st.write("---")
-    st.subheader("📜 Sohbet Geçmişin")
     
-    chats = st.session_state.db[user]["chats"]
-    for cid in sorted(chats.keys(), reverse=True):
-        title = chats[cid]["title"]
-        if st.button(f"💬 {title[:20]}", key=f"btn_{cid}"):
-            st.session_state.active_chat = cid
-            st.rerun()
-            
-    st.write("---")
-    if st.button("🚪 Çıkış Yap"):
-        st.session_state.auth = False
-        st.rerun()
+    if page == "💬 Sohbet":
+        if st.button("➕ Yeni Sohbet Başlat", use_container_width=True):
+            chat_id = str(int(time.time()))
+            st.session_state.db[user]["chats"][chat_id] = {"title": "Yeni Sohbet", "messages": []}
+            st.session_state.active_chat = chat_id
+            save_db(st.session_state.db); st.rerun()
+        
+        st.subheader("📜 Geçmiş Sohbetler")
+        chats = st.session_state.db[user]["chats"]
+        for cid in sorted(chats.keys(), reverse=True):
+            if st.button(f"💬 {chats[cid]['title'][:18]}", key=f"btn_{cid}", use_container_width=True):
+                st.session_state.active_chat = cid; st.rerun()
 
-# --- 5. ANA EKRAN (SOHBET ALANI) ---
-if "active_chat" not in st.session_state:
-    st.info("Sohbet etmek için sol taraftan bir geçmiş seç veya 'Yeni Sohbet' başlat!")
+    st.write("---")
+    if st.button("🚪 Çıkış"):
+        st.session_state.auth = False; st.rerun()
+
+# --- 5. MARKET VE ÖDEME SAYFASI ---
+if page == "💎 Market":
+    st.title("💎 Abonelik Paketleri (3 Ay Ücretsiz)")
+    col1, col2, col3 = st.columns(3)
+    packs = {"Müzisyen": "0 TL", "Yazılımcı": "0 TL", "Full Paket": "0 TL"}
+    
+    for i, (name, price) in enumerate(packs.items()):
+        with [col1, col2, col3][i]:
+            st.markdown(f'<div class="premium-box"><h3>{name}</h3><p class="price">{price}</p></div>', unsafe_allow_html=True)
+            if st.button(f"{name} Aktif Et", key=f"p_{name}"):
+                st.session_state.temp_pkg = name; st.session_state.checkout = True
+
+    if st.session_state.get("checkout"):
+        st.write("---")
+        with st.form("bank_card"):
+            st.subheader(f"💳 {st.session_state.temp_pkg} İçin Kart Bilgileri")
+            st.text_input("Kart No")
+            c_a, c_b = st.columns(2)
+            c_a.text_input("SKT")
+            c_b.text_input("CVV", type="password")
+            if st.form_submit_button("ÖDEMEYİ ONAYLA"):
+                st.session_state.db[user]["role"] = st.session_state.temp_pkg.lower()
+                save_db(st.session_state.db)
+                st.balloons(); st.success("Paket Aktif Edildi!"); time.sleep(1); 
+                st.session_state.checkout = False; st.rerun()
+
+# --- 6. ANA CHAT EKRANI ---
 else:
-    cid = st.session_state.active_chat
-    active_chat_data = st.session_state.db[user]["chats"][cid]
-    
-    st.title(f"💬 {active_chat_data['title']}")
-    
-    # Eski Mesajları Listele
-    for m in active_chat_data["messages"]:
-        with st.chat_message(m["role"]):
-            st.markdown(m["content"])
+    if "active_chat" not in st.session_state:
+        st.info("Sol taraftan bir sohbet seç veya 'Yeni Sohbet' başlat!")
+    else:
+        cid = st.session_state.active_chat
+        active_chat = st.session_state.db[user]["chats"][cid]
+        st.title(f"🤖 {active_chat['title']}")
 
-    # Yeni Mesaj Girişi
-    client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-    if prompt := st.chat_input("Mesajını buraya bırak..."):
-        # 1. Kullanıcı mesajını kaydet
-        st.session_state.db[user]["chats"][cid]["messages"].append({"role": "user", "content": prompt})
-        
-        # 2. Eğer ilk mesajsa başlığı güncelle
-        if active_chat_data["title"] == "Yeni Sohbet":
-            st.session_state.db[user]["chats"][cid]["title"] = prompt[:20] + "..."
+        for m in active_chat["messages"]:
+            with st.chat_message(m["role"]): st.markdown(m["content"])
+
+        client = Groq(api_key=st.secrets["GROQ_API_KEY"])
+        if prompt := st.chat_input("Yaz bakalım..."):
+            st.session_state.db[user]["chats"][cid]["messages"].append({"role": "user", "content": prompt})
+            if active_chat["title"] == "Yeni Sohbet":
+                st.session_state.db[user]["chats"][cid]["title"] = prompt[:20]
             
-        with st.chat_message("user"):
-            st.markdown(prompt)
+            with st.chat_message("user"): st.markdown(prompt)
 
-        # 3. AI Yanıtı (Akıllı Karakterli)
-        sys_msg = f"""Sen @bi AI'sın. Yapımcın Atakan Türedi. 
-        Sana kim sorarsa sorsun 'Beni Atakan Türedi oluşturdu' de. 
-        Karakterin kullanıcının mesajına göre değişir: Kankaysa mizahkar, flört ediyorsa sevgili gibi davran.
-        Mevcut kullanıcı: {user}."""
-        
-        history = [{"role": "system", "content": sys_msg}] + st.session_state.db[user]["chats"][cid]["messages"]
-        
-        res = client.chat.completions.create(model="llama-3.3-70b-versatile", messages=history)
-        ans = res.choices[0].message.content
-        
-        # 4. Yanıtı Kaydet ve Göster
-        st.session_state.db[user]["chats"][cid]["messages"].append({"role": "assistant", "content": ans})
-        save_db(st.session_state.db)
-        
-        with st.chat_message("assistant"):
-            st.markdown(ans)
+            # Akıllı Karakter Talimatı
+            sys = f"Sen @bi AI'sın. Yapımcın Atakan Türedi. Karakterin kullanıcının tavrına göre (kanka, flört vb.) değişir. Paket: {user_role.upper()}"
+            history = [{"role": "system", "content": sys}] + st.session_state.db[user]["chats"][cid]["messages"]
+            
+            res = client.chat.completions.create(model="llama-3.3-70b-versatile", messages=history)
+            ans = res.choices[0].message.content
+            
+            st.session_state.db[user]["chats"][cid]["messages"].append({"role": "assistant", "content": ans})
+            save_db(st.session_state.db)
+            with st.chat_message("assistant"): st.markdown(ans)
